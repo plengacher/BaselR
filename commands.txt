@@ -1,0 +1,85 @@
+## add repo to apt list
+sudo sh -c 'echo "deb http://cran.rstudio.com/bin/linux/ubuntu xenial/" >> /etc/apt/sources.list'
+
+gpg --keyserver keyserver.ubuntu.com --recv-key E084DAB9
+gpg -a --export E084DAB9 | sudo apt-key add -
+
+sudo apt-get update
+
+## install R
+sudo apt-get install r-base -y
+
+## install RStudio Server Pro
+sudo apt-get install gdebi-core -y
+wget https://download2.rstudio.org/rstudio-server-pro-1.0.44-amd64.deb
+sudo gdebi rstudio-server-pro-1.0.44-amd64.deb
+
+## Verify installation
+sudo rstudio-server verify-installation
+
+
+## install Package for shared drive
+sudo apt-get install nfs-common -y
+
+## ***open security groups EC2***
+## ***Security Group EFS***
+
+
+## mount shared drives to home and /ect/rstudio
+sudo mount -t nfs4 -o vers=4.1 eu-west-1a.fs-6a37cba3.efs.eu-west-1.amazonaws.com:/ /home
+sudo mount -t nfs4 -o vers=4.1 eu-west-1a.fs-a842be61.efs.eu-west-1.amazonaws.com:/ /etc/rstudio
+
+
+
+## FROM HERE ONLY ON 1 SERVER IF USING SHARED DRIVE
+## generate secure cookie key
+## install uuid
+sudo apt install uuid -y
+
+## generate secure cookie key
+sudo sh -c "echo `uuid` > /etc/rstudio/secure-cookie-key"
+sudo chmod 0600 /etc/rstudio/secure-cookie-key
+
+## config load-balancer
+sudo vim  load-balancer
+
+## ***add***
+[config]
+
+balancer = sessions
+
+[nodes]
+
+ec2-54-229-203-137.eu-west-1.compute.amazonaws.com
+ec2-54-229-249-242.eu-west-1.compute.amazonaws.com
+ec2-54-154-135-86.eu-west-1.compute.amazonaws.com
+##
+
+
+## change server config
+
+sudo vim rserver
+
+## ***add***
+www-port=80
+admin-enabled=1
+server-shared-storage-path=/home
+##
+
+
+## ON ALL SERVERS AGAIN
+## install clock sync tools
+sudo apt install ntp -y
+sudo apt install ntpdate -y
+
+#sync clock
+sudo ntpdate ntp.ubuntu.com
+
+
+## add user
+sudo useradd test_user
+
+#change user id
+sudo usermod -u 1021 test_user
+
+
